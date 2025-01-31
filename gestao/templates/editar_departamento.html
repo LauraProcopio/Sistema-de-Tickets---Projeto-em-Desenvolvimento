@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Departamento{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Editar Departamento</h1>
+    <form method="POST" class="shadow p-4 bg-light rounded">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome do Departamento</label>
+            <input type="text" id="nome" name="nome" class="form-control" value="{{ departamento.nome }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="sigla" class="form-label">Sigla do Departamento</label>
+            <input type="text" id="sigla" name="sigla" class="form-control" value="{{ departamento.sigla }}" required>
+        </div>
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">Salvar Alterações</button>
+            <a href="{% url 'listar_departamentos' %}" class="btn btn-secondary btn-lg ms-3">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+

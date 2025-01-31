@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Administrador{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Editar Administrador</h1>
+
+    <!-- Exibe mensagens de erro -->
+    {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    <!-- Formulário manual -->
+    <form method="POST" class="shadow p-4 bg-light rounded">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="username" class="form-label">Nome de Usuário</label>
+            <input type="text" id="username" name="username" class="form-control" value="{{ admin.username }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" id="email" name="email" class="form-control" value="{{ admin.email }}" required>
+        </div>
+
+        <!-- Botão de reset da senha -->
+        <div class="text-center mt-4">
+            <button type="submit" name="reset_password" value="true" class="btn btn-danger btn-lg">Resetar Senha para '12345'</button>
+            <button type="submit" class="btn btn-success btn-lg">Salvar</button>
+            <a href="{% url 'listar_adms' %}" class="btn btn-secondary btn-lg ms-3">Voltar</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+

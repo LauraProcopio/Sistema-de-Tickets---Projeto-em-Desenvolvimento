@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Listar Administradores{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Listagem de Administradores</h1>
+
+    <!-- Barra de busca e botão de cadastrar -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <form method="GET" action="{% url 'listar_adms' %}" class="d-flex w-75">
+            <input type="text" name="q" class="form-control me-2" placeholder="Buscar por nome ou e-mail..." value="{{ request.GET.q }}">
+            <button type="submit" class="btn btn-outline-primary d-flex align-items-center">
+                <i class="bi bi-search me-2"></i>Buscar
+            </button>
+        </form>
+        <a href="{% url 'cadastrar_adm' %}" class="btn btn-outline-success d-flex align-items-center">
+            <i class="bi bi-plus-circle me-2"></i>Cadastrar Novo Administrador
+        </a>
+    </div>
+
+    <!-- Tabela de administradores -->
+    {% if admins %}
+    <div class="table-responsive">
+        <table class="table text-center align-middle">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for admin in admins %}
+                <tr>
+                    <td>{{ admin.username }}</td>
+                    <td>{{ admin.email }}</td>
+                    <td>
+                        {% if admin.is_active %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'editar_adm' admin_id=admin.id %}" class="btn btn-outline-warning btn-sm me-2">
+                            <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+                        <form action="{% url 'excluir_adm' admin.id %}" method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este administrador?');">
+                                <i class="bi bi-trash"></i> Excluir
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">Nenhum administrador encontrado.</div>
+    {% endif %}
+</div>
+{% endblock %}

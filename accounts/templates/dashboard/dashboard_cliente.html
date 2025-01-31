@@ -1,0 +1,57 @@
+{% extends 'baseclient.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Dashboard - Cliente</h2>
+
+    <div class="row justify-content-center">
+        <!-- Informações do Usuário -->
+        <div class="col-md-12 col-lg-10 mb-4">
+            <div class="card p-4 mb-4">
+                <h4>Informações do Usuário</h4>
+                <p><strong>Nome:</strong> {{ user.username }}</p>
+                <p><strong>E-mail:</strong> {{ request.user.email }}</p>
+
+                <!-- Botões de Ação -->
+                <a href="{% url 'alterar_cadastro_cliente' %}" class="btn btn-primary mb-2 w-100">Alterar Cadastro</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Listagem dos tickets -->
+    <div class="row justify-content-center">
+        <div class="col-md-12 col-lg-10">
+            <div class="card p-4">
+                <h4>Últimos Tickets</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Status</th>
+                            <th>Prioridade</th>
+                            <th>Data de Criação</th>
+                            <th>Data de Entrega</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets_cliente %}
+                        <tr>
+                            <td>{{ ticket.titulo }}</td>
+                            <td>{{ ticket.status }}</td>
+                            <td>{{ ticket.prioridade }}</td>
+                            <td>{{ ticket.data_criacao }}</td>
+                            <td>{{ ticket.data_entrega }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Nenhum ticket encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

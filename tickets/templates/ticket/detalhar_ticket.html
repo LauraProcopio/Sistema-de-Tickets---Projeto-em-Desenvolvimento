@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row g-4">
+
+        <!-- Coluna Esquerda - Informações do Ticket -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-4 h-100">
+                <h5 class="fw-bold text-primary">Detalhes do Ticket</h5>
+
+                <form method="POST" action="{% url 'atualizar_ticket' ticket.id %}">
+                    {% csrf_token %}
+
+                    <label class="form-label mt-3 fw-semibold">Solicitante</label>
+                    <select class="form-select rounded-3" name="solicitante">
+                        {% for user in users %}
+                            <option value="{{ user.id }}" {% if user.id == ticket.solicitante.id %}selected{% endif %}>
+                                {{ user.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <label class="form-label mt-3 fw-semibold">Responsável</label>
+                    <select class="form-select rounded-3" name="responsavel">
+                        {% for admin in admins %}
+                            <option value="{{ admin.id }}" {% if admin.id == ticket.responsavel.id %}selected{% endif %}>
+                                {{ admin.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <label for="empresa" class="form-label mt-3 fw-semibold">Empresa</label>
+                    <select class="form-select rounded-3" id="empresa" name="empresa" required>
+                        {% for empresa in empresas %}
+                            <option value="{{ empresa.id }}">{{ empresa.nome }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label class="form-label mt-3 fw-semibold">Prioridade</label>
+                    <select class="form-select rounded-3" name="prioridade">
+                        <option {% if ticket.prioridade == "Baixa" %}selected{% endif %}>Baixa</option>
+                        <option {% if ticket.prioridade == "Média" %}selected{% endif %}>Média</option>
+                        <option {% if ticket.prioridade == "Alta" %}selected{% endif %}>Alta</option>
+                    </select>
+
+                    <label class="form-label mt-3 fw-semibold">Data de Entrada</label>
+                    <input type="date" class="form-control rounded-3" name="data_criacao" value="{{ ticket.data_criacao|date:'Y-m-d' }}">
+
+                    <label class="form-label mt-3 fw-semibold">Previsão de Entrega</label>
+                    <input type="date" class="form-control rounded-3" name="previsao_entrega" value="{{ ticket.previsao_entrega|date:'Y-m-d' }}">
+
+                    <button type="submit" class="btn btn-success mt-3 w-100 fw-semibold">Salvar Alterações</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Coluna Direita - Descrição e Respostas -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge 
+                        {% if ticket.status == 'pendente' %}bg-warning text-dark
+                        {% elif ticket.status == 'em andamento' %}bg-primary
+                        {% else %}bg-success{% endif %} 
+                        px-3 py-2 fs-6">
+                        {{ ticket.status|title }}
+                    </span>
+                    <span class="badge bg-secondary px-3 py-2 fs-6">#{{ ticket.id }}</span>
+                </div>
+
+                <h4 class="fw-bold text-primary">{{ ticket.titulo }}</h4>
+
+                <div class="border rounded-3 p-3 bg-light">
+                    <textarea class="form-control rounded-3" name="descricao" rows="4">{{ ticket.descricao }}</textarea>
+                </div>
+
+                <!-- Respostas -->
+                <div class="mt-4">
+                    <ul class="nav nav-tabs" id="respostaTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-semibold" id="publica-tab" data-bs-toggle="tab" data-bs-target="#publica" type="button" role="tab">Resposta Pública</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold" id="interna-tab" data-bs-toggle="tab" data-bs-target="#interna" type="button" role="tab">Resposta Interna</button>
+                        </li>
+                    </ul>
+                
+                    <div class="tab-content mt-3">
+                        <!-- Resposta Pública -->
+                        <div class="tab-pane fade show active" id="publica" role="tabpanel">
+                            <form method="POST" action="{% url 'responder_ticket' ticket.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="tipo_resposta" value="publica">
+                                <textarea class="form-control rounded-3" name="resposta" rows="3" placeholder="Digite aqui..."></textarea>
+                                <button type="submit" class="btn btn-primary mt-3 w-100 fw-semibold">Salvar Resposta Pública</button>
+                            </form>
+                        </div>
+
+                        <!-- Resposta Interna -->
+                        <div class="tab-pane fade" id="interna" role="tabpanel">
+                            <form method="POST" action="{% url 'responder_ticket' ticket.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="tipo_resposta" value="interna">
+                                <textarea class="form-control rounded-3" name="resposta" rows="3" placeholder="Digite uma resposta interna..."></textarea>
+                                <button type="submit" class="btn btn-secondary mt-3 w-100 fw-semibold">Salvar Resposta Interna</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Listagem de Respostas -->
+                <div class="mt-4">
+                    <h5 class="fw-bold">Respostas</h5>
+                    <ul class="list-group">
+                        {% for resposta in ticket.mensagens.all %}
+                            <li class="list-group-item">
+                                <strong>{{ resposta.autor.username }}</strong> - 
+                                <span class="badge {% if resposta.tipo == 'publica' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ resposta.tipo|title }}
+                                </span>
+                                <p class="mb-0">{{ resposta.texto }}</p>
+                                <small class="text-muted">{{ resposta.data_envio }}</small>
+
+                                <!-- Exclusão de Resposta (Apenas Administradores) -->
+                                {% if user.is_staff %}
+                                    <form method="POST" action="{% url 'excluir_resposta' resposta.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm mt-2">Excluir Resposta</button>
+                                    </form>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Botão de Retorno -->
+                <div class="mt-4">
+                    <a href="{% url 'listar_tickets' %}" class="btn btn-secondary w-100 fw-semibold">Voltar à Listagem de Tickets</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

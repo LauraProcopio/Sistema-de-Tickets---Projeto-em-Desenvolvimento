@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Listar Departamentos{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Listagem de Departamentos</h1>
+
+    <!-- Barra de busca e botão de cadastrar -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <form method="GET" action="{% url 'listar_departamentos' %}" class="d-flex w-75">
+            <input type="text" name="q" class="form-control me-2" placeholder="Buscar por nome..." value="{{ request.GET.q }}">
+            <button type="submit" class="btn btn-outline-primary d-flex align-items-center">
+                <i class="bi bi-search me-2"></i>Buscar
+            </button>
+        </form>
+        <a href="{% url 'cadastrar_departamentos' %}" class="btn btn-outline-success d-flex align-items-center">
+            <i class="bi bi-plus-circle me-2"></i>Cadastrar Novo Departamento
+        </a>
+    </div>
+
+    <!-- Tabela de departamentos -->
+    {% if departamentos %}
+    <div class="table-responsive">
+        <table class="table text-center align-middle">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Sigla</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for departamento in departamentos %}
+                <tr>
+                    <td>{{ departamento.nome }}</td>
+                    <td>{{ departamento.sigla }}</td> <!-- Exibindo a sigla do departamento -->
+                    <td>
+                        <a href="{% url 'editar_departamento' departamento.id %}" class="btn btn-outline-warning btn-sm me-2">
+                            <i class="bi bi-pencil-square"></i> Editar
+                        </a>
+                        <form action="{% url 'excluir_departamento' departamento.id %}" method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir este departamento?');">
+                                <i class="bi bi-trash"></i> Excluir
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">Nenhum departamento encontrado.</div>
+    {% endif %}
+</div>
+
+{% endblock %}

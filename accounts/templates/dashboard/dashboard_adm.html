@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Dashboard - Administrador</h2>
+
+    <div class="row justify-content-center">
+        <!-- Gráfico (Esquerda) -->
+        <div class="col-md-8 col-lg-6 mb-4">
+            <div class="card p-4 mb-4">
+                <h4>Tickets Criados por Empresa</h4>
+                <div style="height: 300px;">
+                    <canvas id="graficoTickets"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações do Usuário (Direita) -->
+        <div class="col-md-8 col-lg-6 mb-4">
+            <div class="card p-4 mb-4">
+                <h4>Informações do Usuário</h4>
+                <p><strong>Usuário:</strong> {{ user.username }}</p>
+                <p><strong>E-mail:</strong> {{ request.user.email }}</p>
+
+                <!-- Botões de Ação -->
+                <a href="{% url 'alterar_cadastro' %}" class="btn btn-primary mb-2 w-100">Alterar Cadastro</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Listagem dos tickets -->
+    <div class="row justify-content-center">
+        <div class="col-md-20 col-lg-15">
+            <div class="card p-4">
+                <h4>Últimos Tickets</h4>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Empresa</th>
+                            <th>Descrição</th>
+                            <th>Prioridade</th>
+                            <th>Status</th>
+                            <th>Data de Criação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets_recentes %}
+                        <tr>
+                            <td>{{ ticket.empresa }}</td>
+                            <td>{{ ticket.descricao }}</td>
+                            <td>{{ ticket.prioridade }}</td>
+                            <td>{{ ticket.status }}</td>
+                            <td>{{ ticket.data_criacao }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <!-- Botão de Relatório PDF -->
+                <a href="{% url 'gerar_relatorio_pdf' %}" class="btn btn-secondary mt-2 w-100">Gerar Relatório PDF</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script para o Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('graficoTickets').getContext('2d');
+        const data = {
+            labels: {{ labels|safe }},
+            datasets: [{
+                label: 'Tickets Criados',
+                data: {{ data|safe }},
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 206, 86, 1)',
+                ],
+                borderWidth: 1
+            }]
+        };
+        const config = {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+        new Chart(ctx, config);
+    </script>
+
+</div>
+{% endblock %}

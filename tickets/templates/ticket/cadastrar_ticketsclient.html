@@ -1,0 +1,109 @@
+{% extends 'baseclient.html' %}
+
+{% block content %}
+    <div class="container-fluid p-0">
+        <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+            <div class="col-md-10 col-lg-8">
+                <div class="card w-100 shadow-lg p-4">
+                    <h2 class="text-center mb-4">Cadastrar Ticket</h2>
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <!-- Lado Esquerdo -->
+                            <div class="col-md-6">
+                                <!-- Data de Criação -->
+                                <div class="mb-3">
+                                    <label for="data_entrega" class="form-label">Data de Criação</label>
+                                    <input type="date" class="form-control" id="data_entrega" name="data_entrega" required>
+                                </div>
+
+                                <!-- Empresa -->
+                                <div class="mb-3">
+                                    <label for="empresa" class="form-label">Empresa</label>
+                                    <select class="form-select" id="empresa" name="empresa" required>
+                                        {% for empresa in empresas %}
+                                            <option value="{{ empresa.id }}">{{ empresa.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Solicitante -->
+                                <div class="form-group mb-3">
+                                    <label for="solicitante" class="form-label">Solicitante</label>
+                                    <select class="form-select" id="solicitante" name="solicitante" required>
+                                        {% for user in clientes_e_administradores %}
+                                            <option value="{{ user.id }}">{{ user.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+
+                                    <!-- Responsável -->
+                                    <div class="form-group mb-3">
+                                        <label for="responsavel" class="form-label">Responsável</label>
+                                        <select class="form-select" id="responsavel" name="responsavel">
+                                            {% for admin in administradores %}
+                                                <option value="{{ admin.id }}">{{ admin.username }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Prioridade -->
+
+                                    
+                                    <div class="mb-3">
+                                        <label for="prioridade" class="form-label">Prioridade</label>
+                                        <select class="form-select" id="prioridade" name="prioridade" required>
+                                            <option value="Baixa" {% if prioridade == 'Baixa' %}selected{% endif %}>Baixa</option>
+                                            <option value="Média" {% if prioridade == 'Média' %}selected{% endif %}>Média</option>
+                                            <option value="Alta" {% if prioridade == 'Alta' %}selected{% endif %}>Alta</option>
+                                        </select>
+                                    </div>
+
+
+                                    <!-- Status -->
+                                    <div class="mb-3">
+                                        <label for="status" class="form-label">Status</label>
+                                        <select class="form-select" id="status" name="status" required>
+                                            <option value="Aberto">Aberto</option>
+                                            <option value="Em andamento">Em andamento</option>
+                                            <option value="Concluído">Concluído</option>
+                                        </select>
+                                    </div>
+                         
+                            </div>
+
+                            <!-- Lado Direito -->
+                            <div class="col-md-6">
+                                <!-- Título -->
+                                <div class="mb-3">
+                                    <label for="titulo" class="form-label">Título do Ticket</label>
+                                    <input type="text" class="form-control" id="titulo" name="titulo" value="{{titulo}}" placeholder="Digite o título do ticket" required>
+                                </div>
+
+                                <!-- Descrição -->
+                                <div class="mb-3">
+                                    <label for="descricao" class="form-label">Descrição</label>
+                                    <textarea class="form-control" id="descricao" name="descricao" rows="3" required></textarea>
+                                </div>
+
+                                <!-- Arquivos -->
+                                <div class="mb-3">
+                                    <label for="arquivos" class="form-label">Arquivos (Opcional)</label>
+                                    <input type="file" class="form-control" id="arquivos" name="arquivos" multiple>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                            <a href="{% url 'listar_tickets' %}" class="btn btn-danger ms-2">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

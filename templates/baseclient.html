@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Tickets</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Sidebar */
+        .sidebar {
+            height: 100vh;
+            background-color: #023E7D;
+            color: white;
+            position: fixed;
+            padding: 20px;
+            width: 240px;
+            top: 56px; /* Espaço para a navbar */
+        }
+        .sidebar a {
+            display: block;
+            text-decoration: none;
+            color: white;
+            padding: 10px 0;
+        }
+        .sidebar a:hover {
+            background-color: #0353A4;
+            padding-left: 10px;
+        }
+        .submenu a {
+            padding-left: 20px;
+        }
+        .submenu a:hover {
+            padding-left: 30px;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background-color: #0353A4;
+        }
+        .navbar-custom .navbar-brand,
+        .navbar-custom .nav-link {
+            color: white;
+        }
+        .navbar-custom .nav-link:hover {
+            color: #DEE2E6;
+        }
+
+        /* Conteúdo */
+        .content {
+            margin-left: 260px;
+            margin-top: 70px;
+            padding: 20px;
+        }
+
+        table {
+            background-color: white;
+            border-radius: 5px;
+        }
+        thead {
+            background-color: #DEE2E6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="{% static 'img/logo_aga.png' %}" alt="Logo" width="220" height="50" class="d-inline-block align-text-top">
+            </a>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="alterar_cadastro">👤 Usuário: {{ user.username }} <span class="text-white">({{ user.get_role_display }})</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">🚪 Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="sidebar"> 
+        <a href="{% url 'dashboard_cliente' %}">📊 Dashboard</a> <!-- Adicionando a opção Dashboard -->
+        <a href="{% url 'listar_tickets' %}">🏠 Início</a>
+        <a href="{% url 'cadastrar_tickets' %}">📝 Novo Ticket</a>
+    </div>
+
+    <!-- Conteúdo principal -->
+    <div class="content">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

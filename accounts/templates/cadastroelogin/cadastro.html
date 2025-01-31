@@ -1,0 +1,60 @@
+<!-- templates/cadastroelogin/cadastro.html -->
+{% extends 'base2.html' %}
+
+{% block body %}
+<div class="container-fluid d-flex justify-content-center align-items-center vh-100 p-3" style="background-color: #0a1c2e;">
+    <div class="row w-80 h-80 bg-gradient rounded-3 shadow-lg" style="background: linear-gradient(135deg, #0d2b4c, #0a1c2e);">
+        <!-- Lado Esquerdo -->
+        <div class="col-lg-6 col-12 d-flex justify-content-center align-items-center text-center text-white"
+            style="background-image: url('https://img.freepik.com/vetores-gratis/abstrato-futurista-com-linhas-e-pontos_23-2148385760.jpg?t=st=1738331227~exp=1738334827~hmac=d81e2b857a8c51b0bf84f3da42799b891c15ff755e07904ede2be3950bbdf529&w=996">
+            <div>
+                <h1 class="display-4 fw-bold text-uppercase">AGAEMETEC SISTEMAS</h1>
+            </div>
+        </div>
+
+        <!-- Lado Direito (Formulário) -->
+        <div class="col-lg-6 col-12 d-flex justify-content-center align-items-center p-4">
+            <div class="w-100">
+                <h2 class="text-white mb-3">Cadastro</h2>
+                <p class="text-white mb-4">Preencha os campos abaixo para criar sua conta</p>
+
+                {% if messages %}
+                    <div class="alert alert-info" role="alert">
+                        {% for message in messages %}
+                            <p>{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <form action="{% url 'cadastro' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <input type="text" class="form-control form-control-lg" placeholder="Digite seu nome completo" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="email" class="form-control form-control-lg" placeholder="Digite seu E-mail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" class="form-control form-control-lg" placeholder="Crie uma senha" name="password1" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" class="form-control form-control-lg" placeholder="Confirme sua senha" name="password2" required>
+                    </div>
+
+                    <!-- Opção para selecionar o tipo de usuário (Cliente/Admin) -->
+                    <div class="mb-3">
+                        <label for="role" class="form-label text-white">Tipo de Usuário</label>
+                        <select name="role" class="form-select">
+                            <option value="cliente">Cliente</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-info btn-lg w-100 mb-3">Cadastrar</button>
+                    <p class="text-center text-white">Já tem uma conta? <a href="{% url 'login' %}" class="text-info">Faça login</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

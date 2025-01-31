@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Alterar Cadastro</h2> <!-- Título centralizado -->
+
+    <div class="row justify-content-center">
+        <!-- Informações do Usuário -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card p-4">
+                <h4>Informações do Usuário</h4>
+                <p><strong>Usuário:</strong> {{ user.username }}</p>
+                <p><strong>E-mail:</strong> {{ user.email }}</p>
+                <p><strong>Tipo de Usuário:</strong> {{ user.get_role_display }}</p> <!-- Tipo de usuário -->
+
+            </div>
+        </div>
+
+        <!-- Formulários para Alterar E-mail e Senha -->
+        <div class="col-md-6 col-lg-4">
+            <!-- Formulário para Alterar E-mail -->
+            <div class="card p-4 mb-4">
+                <h4>Alterar E-mail</h4>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        {{ email_form.as_p }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Alterar E-mail</button>
+                </form>
+            </div>
+
+            <!-- Formulário para Alterar Senha -->
+            <div class="card p-4 mb-4">
+                <h4>Alterar Senha</h4>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        {{ password_form.as_p }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Alterar Senha</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

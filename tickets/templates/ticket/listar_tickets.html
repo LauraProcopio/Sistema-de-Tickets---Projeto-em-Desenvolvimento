@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="text-center mb-4">Listagem de Tickets</h2>
+
+    <!-- Barra de Busca -->
+    <form method="GET" class="mb-4">
+        <div class="d-flex">
+            <input type="text" name="q" class="form-control me-2" placeholder="Buscar por título..." value="{{ request.GET.q }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+        </div>
+    </form>
+
+    <!-- Filtro de Status -->
+    <form method="GET" class="mb-4">
+        <div class="d-flex">
+            <select name="status" class="form-select me-2">
+                <option value="">Filtrar por Status</option>
+                <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                <option value="em andamento" {% if request.GET.status == 'em andamento' %}selected{% endif %}>Em Andamento</option>
+                <option value="concluído" {% if request.GET.status == 'concluído' %}selected{% endif %}>Concluído</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </div>
+    </form>
+
+    <!-- Botão para Adicionar Novo Ticket -->
+    <div class="mb-4 text-end">
+        <a href="{% url 'cadastrar_tickets' %}" class="btn btn-success">Adicionar Novo Ticket</a>
+    </div>
+
+    <!-- Tabela de Tickets -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Status</th>
+                <th>Solicitante</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr>
+                <td>{{ ticket.id }}</td>
+                <td>{{ ticket.titulo }}</td>
+                <td>
+                    <span class="badge {% if ticket.status == 'pendente' %}bg-warning{% elif ticket.status == 'em andamento' %}bg-primary{% else %}bg-success{% endif %}">
+                        {{ ticket.status|title }}
+                    </span>
+                </td>
+                <td>{{ ticket.solicitante.username }}</td>
+                <td>
+                    <a href="{% url 'detalhar_ticket' ticket.id %}" class="btn btn-info">Editar</a>
+                    <form method="POST" action="{% url 'excluir_ticket' ticket.id %}" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este ticket?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Nenhum ticket encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
