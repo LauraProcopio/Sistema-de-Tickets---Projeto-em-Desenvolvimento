@@ -1,29 +1,28 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Ticket, Arquivo, Mensagem
 from accounts.models import CustomUser  # Certifique-se de que está importando o modelo correto de usuário
 from django.contrib.auth.decorators import login_required
 from gestao.models import Empresa
 from .forms import MensagemForm, TicketForm 
-from django.http import HttpResponse, HttpResponseForbidden
-from django.shortcuts import get_object_or_404, redirect
-from .models import Ticket, Mensagem, Empresa
-from accounts.models import CustomUser
+from django.http import HttpResponseForbidden
+from .models import Ticket, Mensagem, Empresa, Arquivo
+from django.contrib import messages
+from django.utils.dateparse import parse_date 
+from django.core.paginator import Paginator
 
 # Listar tickets - Filtra por usuário se for cliente
-@login_required
 @login_required
 def listar_tickets(request):
     if request.user.is_staff:
         # Administradores veem todos os tickets
-        tickets = Ticket.objects.all().order_by('-data_criacao')
+        tickets = Ticket.objects.all()
         template_name = 'ticket/listar_tickets.html'
     else:
         # Clientes veem os seus próprios tickets e os da sua empresa
-        tickets = Ticket.objects.filter(solicitante=request.user).order_by('-data_criacao')
+        tickets = Ticket.objects.filter(solicitante=request.user)
         
         # Garantir que o usuário tem uma empresa associada
         if hasattr(request.user, 'empresa') and request.user.empresa:
-            tickets = tickets | Ticket.objects.filter(empresa=request.user.empresa).order_by('-data_criacao')
+            tickets = tickets | Ticket.objects.filter(empresa=request.user.empresa)
         
         template_name = 'ticket/listar_ticketsclient.html'
 
@@ -37,9 +36,19 @@ def listar_tickets(request):
     if query:
         tickets = tickets.filter(titulo__icontains=query)
 
-    return render(request, template_name, {'tickets': tickets})
+    # Ordenação
+    ordenar_por = request.GET.get('ordenar_por', 'data')  # Padrão: ordenar por data
+    if ordenar_por == 'id':
+        tickets = tickets.order_by('id')
+    else:
+        tickets = tickets.order_by('-data_criacao')
 
+    # Aplicando a paginação
+    paginator = Paginator(tickets, 5)  # 5 tickets por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
+    return render(request, template_name, {'tickets': page_obj})
 
 
 # Excluir ticket - Somente administrador pode excluir
@@ -49,11 +58,20 @@ def excluir_ticket(request, id):
 
     # Verifica se o usuário é o cliente do ticket ou administrador
     if ticket.solicitante == request.user or request.user.is_staff:
+        titulo_ticket = ticket.titulo  # Captura o título antes de excluir
+        id_ticket = ticket.id  # Captura o ID antes de excluir
         ticket.delete()
+
+        # Mensagem informando qual ticket foi excluído
+        messages.success(request, f"Ticket #{id_ticket} - '{titulo_ticket}' foi excluído com sucesso!")
+
         return redirect('listar_tickets')
     else:
         # Se não for o cliente ou administrador, retornar para a lista de tickets
+        messages.error(request, "Você não tem permissão para excluir este ticket.")
         return redirect('listar_tickets')
+
+
 
 # Criação de ticket - Admin ou Cliente
 @login_required
@@ -61,24 +79,22 @@ def cadastrar_tickets(request):
     if request.method == 'POST':
         # Captura os dados diretamente do request.POST
         solicitante_id = request.POST.get('solicitante')
-        solicitante = CustomUser.objects.get(id=solicitante_id)
-        titulo = request.POST.get('titulo')  # Título adicionado
+        empresa_id = request.POST.get('empresa')
+        responsavel_id = request.POST.get('responsavel') if request.user.is_staff else None
+        titulo = request.POST.get('titulo')
         descricao = request.POST.get('descricao')
         data_entrega = request.POST.get('data_entrega')
-        empresa_id = request.POST.get('empresa')
-        empresa = Empresa.objects.get(id=empresa_id)
-
-        responsavel = None
         prioridade = request.POST.get('prioridade', 'Média')
-        if request.user.is_staff:
-            responsavel_id = request.POST.get('responsavel')
-            responsavel = CustomUser.objects.get(id=responsavel_id)
-            prioridade = request.POST.get('prioridade')
 
-        # Cria o ticket com o título
+        # Verificações de existência antes de buscar os objetos
+        solicitante = get_object_or_404(CustomUser, id=solicitante_id) if solicitante_id else request.user
+        empresa = Empresa.objects.filter(id=empresa_id).first() if empresa_id else None
+        responsavel = get_object_or_404(CustomUser, id=responsavel_id) if responsavel_id else None
+
+        # Criando o ticket
         ticket = Ticket.objects.create(
             solicitante=solicitante,
-            titulo=titulo,  # Incluindo o título
+            titulo=titulo,
             descricao=descricao,
             data_entrega=data_entrega,
             empresa=empresa,
@@ -88,41 +104,35 @@ def cadastrar_tickets(request):
 
         # Processamento de arquivos
         arquivos = request.FILES.getlist('arquivos')
-        if arquivos:
-            for arquivo in arquivos:
-                Arquivo.objects.create(ticket=ticket, arquivo=arquivo)
+        for arquivo in arquivos:
+            Arquivo.objects.create(ticket=ticket, arquivo=arquivo)
 
+        # Redirecionamento baseado no tipo de usuário
         if request.user.is_staff:
-            # Administrador - renderiza o template de detalhes do ticket
-            return render(request, 'ticket/detalhar_ticket.html', {'ticket': ticket})
+         return redirect('detalhar_ticket', ticket_id=ticket.id)
         else:
-            # Cliente - renderiza o template de detalhes do ticket cliente
-            return render(request, 'ticket/detalhar_ticket_cliente.html', {'ticket': ticket})
+            return redirect('detalhar_ticket_cliente', ticket_id=ticket.id)
 
-    # Captura as opções de clientes, administradores e empresas
+
+    # Captura as opções para o formulário
     clientes_e_administradores = CustomUser.objects.all()
     administradores = CustomUser.objects.filter(is_staff=True)
     empresas = Empresa.objects.all()
 
-    # **Escolhe o template com base no tipo de usuário**
-    if request.user.is_staff:
-        template_name = 'ticket/cadastrar_tickets.html'
-    else:
-        template_name = 'ticket/cadastrar_ticketsclient.html'
+    # Escolhe o template com base no tipo de usuário
+    template_name = 'ticket/cadastrar_tickets.html' if request.user.is_staff else 'ticket/cadastrar_ticketsclient.html'
 
-    # Passando os dados preenchidos para o template
     return render(request, template_name, {
         'clientes_e_administradores': clientes_e_administradores,
         'administradores': administradores,
         'empresas': empresas,
-        'titulo': request.POST.get('titulo', ''),  # Passando o título de volta para o template
+        'titulo': request.POST.get('titulo', ''),
         'descricao': request.POST.get('descricao', ''),
         'data_entrega': request.POST.get('data_entrega', ''),
         'empresa_id': request.POST.get('empresa', ''),
         'responsavel_id': request.POST.get('responsavel', ''),
-        'prioridade': request.POST.get('prioridade', 'Média'),  # Passando a prioridade de volta
+        'prioridade': request.POST.get('prioridade', 'Média'),
     })
-
 
 
 # Detalhar ticket - Apenas admin ou solicitante pode acessar
@@ -132,7 +142,9 @@ def detalhar_ticket(request, ticket_id):
 
     # Verifique se o usuário tem permissão para ver o ticket
     if not request.user.is_staff and ticket.solicitante != request.user:
-        return HttpResponseForbidden("Você não tem permissão para visualizar este ticket.")
+        if not (hasattr(request.user, 'empresa') and request.user.empresa == ticket.empresa):
+            return HttpResponseForbidden("Você não tem permissão para visualizar este ticket.")
+
 
     # Obtenha todos os usuários (clientes e administradores)
     users = CustomUser.objects.all()  # Todos os usuários, incluindo administradores e clientes
@@ -185,59 +197,75 @@ def detalhar_ticket(request, ticket_id):
 def editar_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
-    if request.method == 'POST':
-        titulo = request.POST.get('titulo')
-        descricao = request.POST.get('descricao')
-        data_entrega = request.POST.get('data_entrega')
-        status = request.POST.get('status') if request.user.is_staff else ticket.status
-        observacoes = request.POST.get('observacoes')
+    if not request.user.is_staff and ticket.solicitante != request.user:
+        return HttpResponseForbidden("Você não tem permissão para editar este ticket.")
 
-        ticket.titulo = titulo
-        ticket.descricao = descricao
-        ticket.data_entrega = data_entrega
-        ticket.status = status
-        ticket.observacoes = observacoes
+
+    if request.method == 'POST':
+        ticket.titulo = request.POST.get('titulo', ticket.titulo) or ticket.titulo
+        ticket.descricao = request.POST.get('descricao', ticket.descricao) or ticket.descricao
+        ticket.status = request.POST.get('status', ticket.status) if request.user.is_staff else ticket.status
+        ticket.observacoes = request.POST.get('observacoes', ticket.observacoes) or ticket.observacoes
+
+        data_entrega = request.POST.get('data_entrega')
+        ticket.data_entrega = parse_date(data_entrega) if data_entrega else ticket.data_entrega
 
         ticket.save()
 
-    # Renderiza o template com base no tipo de usuário
-    if request.user.is_staff:
-        template_name = "ticket/detalhar_ticket.html"
-    else:
-        template_name = "ticket/detalhar_ticket_cliente.html"
-
+    template_name = "ticket/detalhar_ticket.html" if request.user.is_staff else "ticket/detalhar_ticket_cliente.html"
     return render(request, template_name, {'ticket': ticket})
+
+
 
 def atualizar_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
     if request.method == 'POST':
+        # Pegando os IDs do formulário
         solicitante_id = request.POST.get('solicitante')
         responsavel_id = request.POST.get('responsavel')
         empresa_id = request.POST.get('empresa')
+        novo_status = request.POST.get('status')
 
+        # Atualizar apenas se os valores forem válidos
         if solicitante_id:
-            ticket.solicitante = get_object_or_404(CustomUser, id=solicitante_id)
+            solicitante = CustomUser.objects.filter(id=solicitante_id).first()
+            if solicitante:
+                ticket.solicitante = solicitante
 
         if responsavel_id:
-            ticket.responsavel = get_object_or_404(CustomUser, id=responsavel_id)
+            responsavel = CustomUser.objects.filter(id=responsavel_id).first()
+            if responsavel:
+                ticket.responsavel = responsavel
 
         if empresa_id:
-            ticket.empresa = get_object_or_404(Empresa, id=empresa_id)
+            empresa = Empresa.objects.filter(id=empresa_id).first()
+            if empresa:
+                ticket.empresa = empresa
 
+        # Validando status antes de salvar
+        status_permitidos = ["Aberto", "Em andamento", "Concluído"]
+        if novo_status in status_permitidos:
+            ticket.status = novo_status
+
+        # Atualizando outros campos
         ticket.prioridade = request.POST.get('prioridade', ticket.prioridade)
-        ticket.data_criacao = request.POST.get('data_criacao', ticket.data_criacao)
         ticket.previsao_entrega = request.POST.get('previsao_entrega', ticket.previsao_entrega)
-
+        
+        # Garantindo que a data de atualização seja tratada corretamente
+        data_atualizacao = request.POST.get("data_atualizacao")
+        if data_atualizacao:
+            ticket.data_atualizacao = data_atualizacao  # Supondo que o campo aceite strings formatadas corretamente
+        
         ticket.save()
+        messages.success(request, "Ticket atualizado com sucesso!")
 
-    # Renderiza o template com base no tipo de usuário
-    if request.user.is_staff:
-        template_name = "ticket/detalhar_ticket.html"
-    else:
-        template_name = "ticket/detalhar_ticket_cliente.html"
+        return redirect('detalhar_ticket', ticket_id=ticket.id)
 
+    # Renderiza o template correto
+    template_name = "ticket/detalhar_ticket.html" if request.user.is_staff else "ticket/detalhar_ticket_cliente.html"
     return render(request, template_name, {'ticket': ticket})
+
 
 def responder_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)

@@ -1,32 +1,49 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+{% if messages %}
+    <div class="container">
+        {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
 <div class="container my-5">
     <h2 class="text-center mb-4">Listagem de Tickets</h2>
 
-    <!-- Barra de Busca -->
+    <!-- Formulário Unificado de Busca e Filtro -->
     <form method="GET" class="mb-4">
-        <div class="d-flex">
-            <input type="text" name="q" class="form-control me-2" placeholder="Buscar por título..." value="{{ request.GET.q }}">
-            <button type="submit" class="btn btn-primary">Buscar</button>
+        <div class="row g-2">
+            <div class="col-md-5">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por título..." value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">Filtrar por Status</option>
+                    <option value="Aberto" {% if request.GET.status == 'Aberto' %}selected{% endif %}>Aberto</option>
+                    <option value="Em andamento" {% if request.GET.status == 'Em andamento' %}selected{% endif %}>Em Andamento</option>
+                    <option value="Concluído" {% if request.GET.status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="ordenar_por" class="form-select">
+                    <option value="data" {% if request.GET.ordenar_por == 'data' %}selected{% endif %}>Data de Criação</option>
+                    <option value="id" {% if request.GET.ordenar_por == 'id' %}selected{% endif %}>ID</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Aplicar</button>
+            </div>
         </div>
     </form>
 
-    <!-- Filtro de Status -->
-    <form method="GET" class="mb-4">
-        <div class="d-flex">
-            <select name="status" class="form-select me-2">
-                <option value="">Filtrar por Status</option>
-                <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
-                <option value="em andamento" {% if request.GET.status == 'em andamento' %}selected{% endif %}>Em Andamento</option>
-                <option value="concluído" {% if request.GET.status == 'concluído' %}selected{% endif %}>Concluído</option>
-            </select>
-            <button type="submit" class="btn btn-primary">Filtrar</button>
-        </div>
-    </form>
-
-    <!-- Botão para Adicionar Novo Ticket -->
-    <div class="mb-4 text-end">
+    <!-- Botão de Adicionar -->
+    <div class="mb-3 text-end">
         <a href="{% url 'cadastrar_tickets' %}" class="btn btn-success">Adicionar Novo Ticket</a>
     </div>
 
@@ -38,6 +55,7 @@
                 <th>Título</th>
                 <th>Status</th>
                 <th>Solicitante</th>
+                <th>Data de Criação</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -47,26 +65,98 @@
                 <td>{{ ticket.id }}</td>
                 <td>{{ ticket.titulo }}</td>
                 <td>
-                    <span class="badge {% if ticket.status == 'pendente' %}bg-warning{% elif ticket.status == 'em andamento' %}bg-primary{% else %}bg-success{% endif %}">
-                        {{ ticket.status|title }}
+                    <span class="badge 
+                    {% if ticket.status|lower == 'aberto' %}bg-success
+                    {% elif ticket.status|lower == 'em andamento' %}bg-warning text-dark
+                    {% elif ticket.status|lower == 'concluído' %}bg-danger
+                    {% else %}bg-secondary{% endif %}"> 
+                    {{ ticket.status }}
                     </span>
                 </td>
                 <td>{{ ticket.solicitante.username }}</td>
+                <td>{{ ticket.data_criacao|date:"d/m/Y H:i" }}</td>  
                 <td>
                     <a href="{% url 'detalhar_ticket' ticket.id %}" class="btn btn-info">Editar</a>
-                    <form method="POST" action="{% url 'excluir_ticket' ticket.id %}" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir este ticket?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Excluir</button>
-                    </form>
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" 
+                        data-ticket-id="{{ ticket.id }}" data-ticket-titulo="{{ ticket.titulo }}">
+                        Excluir
+                    </button>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" class="text-center">Nenhum ticket encontrado.</td>
+                <td colspan="6" class="text-center">Nenhum ticket encontrado.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-</div>
-{% endblock %}
 
+<!-- Paginação -->
+<nav>
+    <ul class="pagination justify-content-center">
+        {% if tickets.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ request.GET.q }}&status={{ request.GET.status }}&ordenar_por={{ request.GET.ordenar_por }}&page=1">Primeira</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?q={{ request.GET.q }}&status={{ request.GET.status }}&ordenar_por={{ request.GET.ordenar_por }}&page={{ tickets.previous_page_number }}">Anterior</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Página {{ tickets.number }} de {{ tickets.paginator.num_pages }}</span>
+        </li>
+
+        {% if tickets.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ request.GET.q }}&status={{ request.GET.status }}&ordenar_por={{ request.GET.ordenar_por }}&page={{ tickets.next_page_number }}">Próxima</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?q={{ request.GET.q }}&status={{ request.GET.status }}&ordenar_por={{ request.GET.ordenar_por }}&page={{ tickets.paginator.num_pages }}">Última</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o ticket <strong id="ticketTitulo"></strong> (ID: <strong id="ticketId"></strong>)?</p>
+            </div>
+            <div class="modal-footer">
+                <form id="deleteTicketForm" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para preencher os dados no modal -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var confirmDeleteModal = document.getElementById('confirmDeleteModal');
+    confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var ticketId = button.getAttribute('data-ticket-id');
+        var ticketTitulo = button.getAttribute('data-ticket-titulo');
+        
+        document.getElementById('ticketTitulo').textContent = ticketTitulo;
+        document.getElementById('ticketId').textContent = ticketId;
+        
+        var deleteForm = document.getElementById('deleteTicketForm');
+        deleteForm.action = "/excluir_ticket/" + ticketId + "/";
+    });
+});
+</script>
+
+{% endblock %}

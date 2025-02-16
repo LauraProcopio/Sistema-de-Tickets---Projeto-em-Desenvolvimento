@@ -18,7 +18,7 @@ urlpatterns = [
     path('dashboard_adm/', views.dashboard_adm, name='dashboard_adm'),
     path('dashboard_cliente/', views.dashboard_cliente, name='dashboard_cliente'),
     path('gerar_relatorio_pdf/', views.gerar_relatorio_pdf, name='gerar_relatorio_pdf'),
-
+    path('relatorio/excel/', views.gerar_relatorio_excel, name='gerar_relatorio_excel'),
 
     path('alterar-cadastro/', views.alterar_cadastro, name='alterar_cadastro'),
     path('alterar-cadastro-cliente/', views.alterar_cadastro_cliente, name='alterar_cadastro_cliente'),

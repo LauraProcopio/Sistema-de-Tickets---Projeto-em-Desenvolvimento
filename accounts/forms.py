@@ -1,6 +1,5 @@
 from django import forms
 from .models import CustomUser
-from gestao.models import Cliente, Empresa, Departamento
 
 class AlterarEmailForm(forms.ModelForm):
     class Meta:

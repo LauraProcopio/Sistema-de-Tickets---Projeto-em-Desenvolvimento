@@ -5,35 +5,67 @@
     <h2 class="text-center mb-4">Dashboard - Administrador</h2>
 
     <div class="row justify-content-center">
-        <!-- Gráfico (Esquerda) -->
+        <!-- Gráfico -->
         <div class="col-md-8 col-lg-6 mb-4">
-            <div class="card p-4 mb-4">
-                <h4>Tickets Criados por Empresa</h4>
+            <div class="card p-4">
+                <h4>Tickets Criados</h4>
+                <select id="filtroGrafico" class="form-control mb-3" onchange="mostrarGrafico(this.value)">
+                    <option value="empresa">Por Empresa</option>
+                    <option value="status">Por Status</option>
+                </select>
                 <div style="height: 300px;">
                     <canvas id="graficoTickets"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Informações do Usuário (Direita) -->
+        <!-- Informações do Usuário -->
         <div class="col-md-8 col-lg-6 mb-4">
-            <div class="card p-4 mb-4">
+            <div class="card p-4">
                 <h4>Informações do Usuário</h4>
                 <p><strong>Usuário:</strong> {{ user.username }}</p>
                 <p><strong>E-mail:</strong> {{ request.user.email }}</p>
-
-                <!-- Botões de Ação -->
-                <a href="{% url 'alterar_cadastro' %}" class="btn btn-primary mb-2 w-100">Alterar Cadastro</a>
+                <a href="{% url 'alterar_cadastro' %}" class="btn btn-primary w-100">Alterar Cadastro</a>
             </div>
         </div>
     </div>
 
-    <!-- Listagem dos tickets -->
+    <!-- Filtros e Listagem dos Tickets -->
     <div class="row justify-content-center">
-        <div class="col-md-20 col-lg-15">
+        <div class="col-md-12">
             <div class="card p-4">
                 <h4>Últimos Tickets</h4>
-                <table class="table">
+
+                <!-- Filtros -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="filtroPrioridade">Filtrar por Prioridade:</label>
+                        <select id="filtroPrioridade" class="form-control">
+                            <option value="">Todas</option>
+                            <option value="Baixa">Baixa</option>
+                            <option value="Média">Média</option>
+                            <option value="Alta">Alta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filtroStatus">Filtrar por Status:</label>
+                        <select id="filtroStatus" class="form-control">
+                            <option value="">Todos</option>
+                            <option value="Em Aberto">Em Aberto</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Botões de Relatório -->
+                <div class="d-flex justify-content-between mb-3">
+                    <a href="{% url 'gerar_relatorio_pdf' %}" class="btn btn-danger w-50 mx-1">Gerar PDF</a>
+                    <a href="{% url 'gerar_relatorio_excel' %}" class="btn btn-success w-50 mx-1">Gerar Excel</a>
+                </div>
+
+                <!-- Tabela de Tickets -->
+                <table class="table" id="tabelaTickets">
                     <thead>
                         <tr>
                             <th>Empresa</th>
@@ -49,55 +81,95 @@
                             <td>{{ ticket.empresa }}</td>
                             <td>{{ ticket.descricao }}</td>
                             <td>{{ ticket.prioridade }}</td>
-                            <td>{{ ticket.status }}</td>
+                            <td class="status" data-status="{{ ticket.status }}">{{ ticket.status }}</td>
                             <td>{{ ticket.data_criacao }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                <!-- Botão de Relatório PDF -->
-                <a href="{% url 'gerar_relatorio_pdf' %}" class="btn btn-secondary mt-2 w-100">Gerar Relatório PDF</a>
             </div>
         </div>
     </div>
 
-    <!-- Script para o Chart.js -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const ctx = document.getElementById('graficoTickets').getContext('2d');
-        const data = {
-            labels: {{ labels|safe }},
-            datasets: [{
-                label: 'Tickets Criados',
-                data: {{ data|safe }},
-                backgroundColor: [
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                ],
-                borderColor: [
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 206, 86, 1)',
-                ],
-                borderWidth: 1
-            }]
-        };
-        const config = {
-            type: 'bar',
-            data: data,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
+        let chartInstance = null;
+
+        function mostrarGrafico(tipo) {
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            let ctx = document.getElementById('graficoTickets').getContext('2d');
+            let labels, data, backgroundColor, borderColor;
+
+            if (tipo === 'empresa') {
+                labels = {{ labels_empresa|safe }};
+                data = {{ data_empresa|safe }};
+                backgroundColor = 'rgba(54, 162, 235, 0.5)';
+                borderColor = 'rgba(54, 162, 235, 1)';
+            } else {
+                labels = {{ labels_status|safe }};
+                data = {{ data_status|safe }};
+                backgroundColor = labels.map(status => {
+                    switch (status.toLowerCase()) {
+                        case "em aberto": return 'rgba(75, 192, 192, 0.5)';
+                        case "em andamento": return 'rgba(255, 205, 86, 0.5)';
+                        case "concluído": return 'rgba(255, 99, 132, 0.5)';
+                        default: return 'rgba(201, 203, 207, 0.5)';
+                    }
+                });
+                borderColor = backgroundColor.map(color => color.replace('0.5', '1'));
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: tipo === 'empresa' ? 'Tickets por Empresa' : 'Tickets por Status',
+                        data: data,
+                        backgroundColor: backgroundColor,
+                        borderColor: borderColor,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
                     }
                 }
-            }
-        };
-        new Chart(ctx, config);
-    </script>
+            });
+        }
 
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".status").forEach(cell => {
+                let status = cell.dataset.status.toLowerCase();
+                if (status === "em aberto") cell.style.color = "green";
+                if (status === "em andamento") cell.style.color = "orange";
+                if (status === "concluído") cell.style.color = "red";
+            });
+            mostrarGrafico('empresa');
+        });
+
+        document.getElementById('filtroPrioridade').addEventListener('change', filtrarTickets);
+        document.getElementById('filtroStatus').addEventListener('change', filtrarTickets);
+
+        function filtrarTickets() {
+            let prioridade = document.getElementById('filtroPrioridade').value.toLowerCase();
+            let status = document.getElementById('filtroStatus').value.toLowerCase();
+
+            document.querySelectorAll('#tabelaTickets tbody tr').forEach(row => {
+                let prioridadeTicket = row.cells[2].textContent.toLowerCase();
+                let statusTicket = row.cells[3].textContent.toLowerCase();
+                row.style.display = (!prioridade || prioridadeTicket === prioridade) && (!status || statusTicket === status) ? '' : 'none';
+            });
+        }
+    </script>
 </div>
 {% endblock %}
+
+
