@@ -84,37 +84,94 @@
 
         <div class="col-md-6">
             <div class="card shadow-lg p-4 h-100 border-primary">
-                <h3 class="fw-bold text-primary">#{{ ticket.id }} - <span class="form-control d-inline-block w-auto fw-bold bg-light">{{ ticket.titulo }}</span></h3>
-                
+                <h3 class="fw-bold text-primary">#{{ ticket.id }} - 
+                    <span class="form-control d-inline-block w-auto fw-bold bg-light">{{ ticket.titulo }}</span>
+                </h3>
+        
+                <!-- Abas para Respostas -->
                 <div class="mt-4">
                     <ul class="nav nav-tabs" id="respostaTab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active fw-bold" id="publica-tab" data-bs-toggle="tab" data-bs-target="#publica" type="button" role="tab">Resposta Pública</button>
+                            <button class="nav-link active fw-bold" id="publica-tab" data-bs-toggle="tab" 
+                                data-bs-target="#publica" type="button" role="tab" aria-controls="publica">Resposta Pública</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-bold" id="interna-tab" data-bs-toggle="tab" data-bs-target="#interna" type="button" role="tab">Resposta Interna</button>
+                            <button class="nav-link fw-bold" id="interna-tab" data-bs-toggle="tab" 
+                                data-bs-target="#interna" type="button" role="tab" aria-controls="interna">Resposta Interna</button>
                         </li>
                     </ul>
+        
+                    <!-- Formulários de Respostas -->
                     <div class="tab-content mt-3">
-                        <div class="tab-pane fade show active" id="publica" role="tabpanel">
-                            <form method="POST" action="{% url 'responder_ticket' ticket.id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="tipo_resposta" value="publica">
-                                <textarea class="form-control rounded-3" name="resposta" rows="3" placeholder="Digite aqui..."></textarea>
-                                <button type="submit" class="btn btn-primary mt-3 w-100 fw-bold">Salvar Resposta Pública</button>
-                            </form>
-                        </div>
-                        <div class="tab-pane fade" id="interna" role="tabpanel">
-                            <form method="POST" action="{% url 'responder_ticket' ticket.id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="tipo_resposta" value="interna">
-                                <textarea class="form-control rounded-3" name="resposta" rows="3" placeholder="Digite uma resposta interna..."></textarea>
-                                <button type="submit" class="btn btn-secondary mt-3 w-100 fw-bold">Salvar Resposta Interna</button>
-                            </form>
+                    <!-- Resposta Pública -->
+                    <div class="tab-pane fade show active" id="publica" role="tabpanel">
+                        <form method="POST" action="{% url 'responder_ticket' ticket.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo_resposta" value="publica">
+                            <textarea class="form-control rounded-3" name="resposta" rows="3" placeholder="Digite aqui..."></textarea>
+                            <button type="submit" class="btn btn-primary mt-3 w-100 fw-bold">Salvar Resposta Pública</button>
+                        </form>
+
+                        <!-- Listagem de respostas públicas -->
+                        <div class="mt-3">
+                            <h5 class="fw-bold">Respostas Públicas</h5>
+                            <ul class="list-group">
+                                {% for mensagem in mensagens_publicas %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ mensagem.autor.username }}:</strong> {{ mensagem.texto }}
+                                            <small class="text-muted d-block">{{ mensagem.data_envio|date:"d/m/Y H:i" }}</small>
+                                        </div>
+                                        {% if user.is_staff %}
+                                        <!-- Botão de excluir resposta -->
+                                        <form method="POST" action="{% url 'excluir_resposta' mensagem.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                        </form>
+                                        {% endif %}
+                                    </li>
+                                {% empty %}
+                                    <li class="list-group-item text-muted">Nenhuma resposta pública.</li>
+                                {% endfor %}
+                            </ul>
                         </div>
                     </div>
-                </div>
 
+                    <!-- Resposta Interna -->
+                    <div class="tab-pane fade" id="interna" role="tabpanel">
+                        <form method="POST" action="{% url 'responder_ticket' ticket.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="tipo_resposta" value="interna">
+                            <textarea class="form-control rounded-3" name="resposta" rows="3" placeholder="Digite uma resposta interna..."></textarea>
+                            <button type="submit" class="btn btn-secondary mt-3 w-100 fw-bold">Salvar Resposta Interna</button>
+                        </form>
+
+                        <!-- Listagem de respostas internas -->
+                        <div class="mt-3">
+                            <h5 class="fw-bold">Respostas Internas</h5>
+                            <ul class="list-group">
+                                {% for mensagem in mensagens_internas %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ mensagem.autor.username }}:</strong> {{ mensagem.texto }}
+                                            <small class="text-muted d-block">{{ mensagem.data_envio|date:"d/m/Y H:i" }}</small>
+                                        </div>
+                                        {% if user.is_staff %}
+                                        <!-- Botão de excluir resposta -->
+                                        <form method="POST" action="{% url 'excluir_resposta' mensagem.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                                        </form>
+                                        {% endif %}
+                                    </li>
+                                {% empty %}
+                                    <li class="list-group-item text-muted">Nenhuma resposta interna.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                <!-- Botão de Voltar -->
                 <div class="mt-4">
                     <a href="{% url 'listar_tickets' %}" class="btn btn-secondary w-100 fw-bold">Voltar à Listagem de Tickets</a>
                 </div>
@@ -122,6 +179,23 @@
         </div>
     </div>
 </div>
+
+<!-- Script para Garantir que as Abas Funcionem Corretamente -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var triggerTabList = [].slice.call(document.querySelectorAll('#respostaTab button'))
+        triggerTabList.forEach(function (triggerEl) {
+            var tabTrigger = new bootstrap.Tab(triggerEl)
+            triggerEl.addEventListener('click', function (event) {
+                event.preventDefault()
+                tabTrigger.show()
+            })
+        })
+    });
+    </script>
+
 {% endblock %}
+
+
 
 

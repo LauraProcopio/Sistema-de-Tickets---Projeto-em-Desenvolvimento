@@ -140,56 +140,37 @@ def cadastrar_tickets(request):
 def detalhar_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
-    # Verifique se o usuário tem permissão para ver o ticket
     if not request.user.is_staff and ticket.solicitante != request.user:
         if not (hasattr(request.user, 'empresa') and request.user.empresa == ticket.empresa):
             return HttpResponseForbidden("Você não tem permissão para visualizar este ticket.")
 
+    # Obtenha os usuários, administradores e empresas
+    users = CustomUser.objects.all()
+    admins = CustomUser.objects.filter(is_staff=True)
+    empresas = Empresa.objects.all()
 
-    # Obtenha todos os usuários (clientes e administradores)
-    users = CustomUser.objects.all()  # Todos os usuários, incluindo administradores e clientes
-
-    # Obtenha apenas os administradores para o responsável
-    admins = CustomUser.objects.filter(is_staff=True)  # Somente administradores para o responsável
-
-    empresas = Empresa.objects.all()  # Obtenha todas as empresas
+    # Mensagens filtradas corretamente
+    mensagens_publicas = Mensagem.objects.filter(ticket=ticket, tipo="publica").order_by('-data_envio')
+    mensagens_internas = Mensagem.objects.filter(ticket=ticket, tipo="interna").order_by('-data_envio')
 
     # Formulários
     mensagem_form = MensagemForm()
     ticket_form = TicketForm(instance=ticket)
 
-    # Se for um POST de atualização do ticket
-    if request.method == "POST":
-        if "nova_mensagem" in request.POST:
-            mensagem_form = MensagemForm(request.POST)
-            if mensagem_form.is_valid():
-                nova_mensagem = mensagem_form.save(commit=False)
-                nova_mensagem.ticket = ticket
-                nova_mensagem.autor = request.user
-                nova_mensagem.save()
-                return redirect('detalhar_ticket', ticket_id=ticket.id)
+    # Template adequado ao usuário
+    template_name = "ticket/detalhar_ticket.html" if request.user.is_staff else "ticket/detalhar_ticket_cliente.html"
 
-        elif request.user.is_staff and "atualizar_ticket" in request.POST:
-            ticket_form = TicketForm(request.POST, instance=ticket)
-            if ticket_form.is_valid():
-                ticket_form.save()
-                return redirect('detalhar_ticket', ticket_id=ticket.id)
-        
-         # Escolher o template com base no tipo de usuário
-    if request.user.is_staff:
-        template_name = "ticket/detalhar_ticket.html"
-    else:
-        template_name = "ticket/detalhar_ticket_cliente.html"
-
-    # Passando os dados necessários para o template
     return render(request, template_name, {
         "ticket": ticket,
         "ticket_form": ticket_form,
         "mensagem_form": mensagem_form,
-        "users": users,  # Todos os usuários (solicitante)
-        "admins": admins,  # Apenas administradores (responsável)
+        "users": users,
+        "admins": admins,
         "empresas": empresas,
+        "mensagens_publicas": mensagens_publicas,  # 🔥 Adicionando as mensagens públicas
+        "mensagens_internas": mensagens_internas,  # 🔥 Adicionando as mensagens internas
     })
+
 
 
 
@@ -267,30 +248,51 @@ def atualizar_ticket(request, ticket_id):
     return render(request, template_name, {'ticket': ticket})
 
 
+@login_required
 def responder_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
     if request.method == 'POST':
         texto = request.POST.get('resposta')
-        tipo_resposta = request.POST.get('tipo_resposta')  # Tipo de resposta: pública ou interna
+        tipo_resposta = request.POST.get('tipo_resposta')
 
         if texto:
             if tipo_resposta not in ['publica', 'interna']:
-                tipo_resposta = 'publica'  # Definir 'publica' como padrão
+                tipo_resposta = 'publica'  
 
             Mensagem.objects.create(ticket=ticket, autor=request.user, texto=texto, tipo=tipo_resposta)
+            messages.success(request, f"Resposta {tipo_resposta} adicionada com sucesso!")
 
-    # Renderiza o template com base no tipo de usuário
-    if request.user.is_staff:
-        template_name = "ticket/detalhar_ticket.html"
-    else:
-        template_name = "ticket/detalhar_ticket_cliente.html"
+    # **Recarregar todas as informações do ticket**
+    ticket.refresh_from_db()
 
-    return render(request, template_name, {'ticket': ticket})
+    # **Obter as mensagens corretamente**
+    mensagens_publicas = Mensagem.objects.filter(ticket=ticket, tipo='publica').order_by('-data_envio')
+    mensagens_internas = Mensagem.objects.filter(ticket=ticket, tipo='interna').order_by('-data_envio')
 
+    # **Passar os dados completos para o template**
+    template_name = "ticket/detalhar_ticket.html" if request.user.is_staff else "ticket/detalhar_ticket_cliente.html"
+
+    return render(request, template_name, {
+        'ticket': ticket,
+        'mensagens_publicas': mensagens_publicas,
+        'mensagens_internas': mensagens_internas,
+        'users': CustomUser.objects.all(),
+        'admins': CustomUser.objects.filter(is_staff=True),
+        'empresas': Empresa.objects.all(),
+    })
+
+
+@login_required
 def excluir_resposta(request, resposta_id):
-    # Verifica se o usuário é administrador
+    resposta = get_object_or_404(Mensagem, id=resposta_id)
+
     if request.user.is_staff:
-        resposta = get_object_or_404(Mensagem, id=resposta_id)
+        ticket_id = resposta.ticket.id  # Pega o ID do ticket antes de excluir
         resposta.delete()
+        messages.success(request, "Resposta excluída com sucesso!")
+        return redirect('detalhar_ticket', ticket_id=ticket_id)
+
+    messages.error(request, "Você não tem permissão para excluir esta resposta.")
     return redirect('detalhar_ticket', ticket_id=resposta.ticket.id)
+

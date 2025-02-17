@@ -143,20 +143,20 @@
 
 <!-- Script para preencher os dados no modal -->
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    var confirmDeleteModal = document.getElementById('confirmDeleteModal');
-    confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
-        var button = event.relatedTarget;
-        var ticketId = button.getAttribute('data-ticket-id');
-        var ticketTitulo = button.getAttribute('data-ticket-titulo');
-        
-        document.getElementById('ticketTitulo').textContent = ticketTitulo;
-        document.getElementById('ticketId').textContent = ticketId;
-        
-        var deleteForm = document.getElementById('deleteTicketForm');
-        deleteForm.action = "/excluir_ticket/" + ticketId + "/";
+    document.addEventListener("DOMContentLoaded", function() {
+        var confirmDeleteModal = document.getElementById('confirmDeleteModal');
+        confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var ticketId = button.getAttribute('data-ticket-id');
+            var ticketTitulo = button.getAttribute('data-ticket-titulo');
+            
+            document.getElementById('ticketTitulo').textContent = ticketTitulo;
+            document.getElementById('ticketId').textContent = ticketId;
+            
+            var deleteForm = document.getElementById('deleteTicketForm');
+            deleteForm.action = "/tickets/excluir/" + ticketId + "/";
+        });
     });
-});
-</script>
+    </script>
 
 {% endblock %}
