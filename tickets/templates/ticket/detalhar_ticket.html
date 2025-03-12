@@ -8,7 +8,11 @@
             <div class="card shadow-lg p-4 h-100 border-primary">
                 <h4 class="fw-bold text-primary border-bottom pb-2">Detalhes do Ticket</h4>
                 
-                <form method="POST" action="{% url 'atualizar_ticket' ticket.id %}" enctype="multipart/form-data">
+                {% if ticket.id %}
+                     <form method="POST" action="{% url 'atualizar_ticket' ticket.id %}" enctype="multipart/form-data">
+                    {% else %}
+                        <p>Erro: Ticket não encontrado.</p>
+                    {% endif %}
                     {% csrf_token %}
 
                     <label class="fw-bold">Descrição</label>
@@ -75,7 +79,7 @@
                     <input type="date" class="form-control rounded-3" name="data_criacao" value="{{ ticket.data_criacao|date:'Y-m-d' }}">
                     
                     <label class="form-label mt-3 fw-bold">Previsão de Entrega</label>
-                    <input type="date" class="form-control rounded-3" name="previsao_entrega" value="{{ ticket.previsao_entrega|date:'Y-m-d' }}">
+                    <input type="date" class="form-control rounded-3" name="data_entrega" value="{{ ticket.data_entrega|date:'Y-m-d' }}">
                     
                     <button type="submit" class="btn btn-success mt-3 w-100 fw-bold">Salvar Alterações</button>
                 </form>
@@ -105,7 +109,11 @@
                     <div class="tab-content mt-3">
                     <!-- Resposta Pública -->
                     <div class="tab-pane fade show active" id="publica" role="tabpanel">
-                        <form method="POST" action="{% url 'responder_ticket' ticket.id %}">
+                                                    {% if ticket %}
+                                <form method="POST" action="{% url 'responder_ticket' ticket.id %}">
+                            {% else %}
+                                <p>Erro: Ticket não encontrado.</p>
+                            {% endif %}
                             {% csrf_token %}
                             <input type="hidden" name="tipo_resposta" value="publica">
                             <textarea class="form-control rounded-3" name="resposta" rows="3" placeholder="Digite aqui..."></textarea>
@@ -124,7 +132,11 @@
                                         </div>
                                         {% if user.is_staff %}
                                         <!-- Botão de excluir resposta -->
-                                        <form method="POST" action="{% url 'excluir_resposta' mensagem.id %}">
+                                        {% if resposta.id %}
+    <a href="{% url 'excluir_resposta' resposta.id %}">Excluir</a>
+{% else %}
+    <p>Erro: ID da resposta não encontrado.</p>
+{% endif %}
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
                                         </form>

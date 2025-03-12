@@ -1,28 +1,28 @@
 # views.py
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import render, redirect 
+from django.contrib import messages 
+from django.contrib.auth import authenticate, login, logout 
 from django.contrib.auth.hashers import make_password
-from accounts.models import CustomUser  # Certifique-se de que o modelo está correto
-from django.contrib.auth.decorators import login_required
-from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required 
+from django.contrib.admin.views.decorators import staff_member_required 
+from accounts.models import CustomUser
 from tickets.models import Ticket
-from gestao.models import Cliente # Importa o modelo Cliente
-from django.db.models import Count
-from django.http import HttpResponse
-from reportlab.pdfgen import canvas
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
-from .forms import AlterarEmailForm
+from django.db.models import Count 
+from django.http import HttpResponse 
+from reportlab.pdfgen import canvas 
+from django.contrib.auth import update_session_auth_hash, get_user_model 
+from django.contrib.auth.forms import PasswordChangeForm 
+from .forms import AlterarEmailForm 
 import io
-import xlsxwriter
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import Table, TableStyle
-from reportlab.lib import colors
+import xlsxwriter 
+from reportlab.lib.pagesizes import letter 
+from reportlab.platypus import Table, TableStyle 
+from reportlab.lib import colors 
+
 
 # Função de Cadastro de Usuário
 # Cadastro de usuário
-from django.shortcuts import render
+from django.shortcuts import render # type: ignore
 
 def cadastro(request):
     if request.method == 'POST':
@@ -31,7 +31,7 @@ def cadastro(request):
         email = request.POST.get('email')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
-        role = request.POST.get('role')
+        role = request.POST.get('role', 'user')
 
         # Verifica se todos os campos obrigatórios foram preenchidos
         if not all([username, email, password1, password2]):
@@ -43,12 +43,16 @@ def cadastro(request):
             messages.warning(request, "As senhas não coincidem. Tente novamente.")
             return render(request, 'cadastroelogin/cadastro.html')
 
-        # Verifica se o nome de usuário já está em uso
+        # Verifica se o nome de usuário já está em us
+
         if CustomUser.objects.filter(username=username).exists():
             messages.error(request, "Nome de usuário já está em uso.")
             return render(request, 'cadastroelogin/cadastro.html')
 
         # Verifica se o e-mail já está cadastrado
+
+
+
         if CustomUser.objects.filter(email=email).exists():
             messages.error(request, "E-mail já cadastrado.")
             return render(request, 'cadastroelogin/cadastro.html')
@@ -62,21 +66,20 @@ def cadastro(request):
                 is_staff=True if role == 'admin' else False,
             )
 
-            # Mensagem de sucesso após o cadastro
+             #Mensagem de sucesso após o cadastro
             messages.success(request, "Usuário cadastrado com sucesso!")
 
-            # Redireciona para a página de login
+             #Redireciona para a página de login
             return redirect('login')  # 'login' deve ser o nome da URL para a página de login
 
         except Exception as e:
-            messages.error(request, f"Ocorreu um erro ao cadastrar o usuário: {e}")
-            return render(request, 'cadastroelogin/cadastro.html')
+           messages.error(request, f"Ocorreu um erro ao cadastrar o usuário: {e}")
+        return render(request, 'cadastroelogin/cadastro.html')
 
     # Exibe lista de usuários cadastrados
     usuario_list = CustomUser.objects.all()
+    
     return render(request, 'cadastroelogin/cadastro.html', {'usuario_list': usuario_list})
-
-
 
 
 # Função de Login de Usuário
@@ -92,16 +95,16 @@ def user_login(request):
             messages.success(request, "Login realizado com sucesso!")
 
             # Verifica o tipo de usuário (role) e redireciona para o painel adequado
-            if user.role == 'admin':  # Caso seja administrador
-                if user.is_staff:  # Verifica se o usuário é staff
+        if user.role == 'admin':  # Caso seja administrador
+            if user.is_staff:  # Verifica se o usuário é staff
                     return redirect('dashboard_adm')  # Página do admin
-                else:
+            else:
                     messages.error(request, "Acesso negado. Você não tem permissão de administrador.")
                     return redirect('login')  # Redireciona de volta ao login
 
-            else:  # Caso seja cliente
+        else:  # Caso seja cliente
                 return redirect('dashboard_cliente')  # Página do cliente
-        else:
+    else:
             messages.error(request, "Usuário ou senha inválidos.")
             return render(request, 'cadastroelogin/login.html')  # Página de login
 
@@ -113,10 +116,9 @@ def user_logout(request):
     messages.success(request, "Logout realizado com sucesso!")
     return redirect('login')  # Redireciona de volta para a página de login após o logout
 
-
-
 @login_required
 @staff_member_required
+
 def dashboard_adm(request):
     # Captura os filtros da URL
     status_filtro = request.GET.get('status', '')
@@ -219,10 +221,11 @@ def gerar_relatorio_excel(request):
 
 @login_required
 def dashboard_cliente(request):
+    User = get_user_model()
     # Recupera o cliente associado ao usuário logado
     try:
-        cliente = Cliente.objects.get(email=request.user.email)
-    except Cliente.DoesNotExist:
+        cliente = User.objects.get(email=request.user.email)
+    except User.DoesNotExist:
         cliente = None
 
     if cliente:
@@ -234,6 +237,7 @@ def dashboard_cliente(request):
     return render(request, 'dashboard/dashboard_cliente.html', {
         'tickets_cliente': tickets_cliente,
     })
+
 
 def alterar_cadastro(request):
     # Formulários

@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.utils import IntegrityError
-from .models import Empresa, Departamento, Cliente
+from .models import Empresa, Departamento
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.contrib.auth.hashers import make_password
 from django.contrib import messages
+from accounts.models import CustomUser
 
 # Create your views here.
 # Listar Empresas
@@ -88,20 +89,24 @@ def excluir_departamento(request, id):
 
 # Início das views de clientes
 def listar_clientes(request):
-    query = request.GET.get('q', '')
-    if query:
-        clientes = Cliente.objects.filter(nome__icontains=query)
+    
+    User = get_user_model()  # Usando o CustomUser
+
+    search_query = request.GET.get('q', '')  # Obtém o valor da busca (se houver)
+    if search_query:
+        clientes = User.objects.filter(role='cliente', username__icontains=search_query)  # Filtra os clientes pelo nome
     else:
-        clientes = Cliente.objects.all()
+        clientes = User.objects.filter(role='cliente')  # Se não houver filtro, pega todos os clientes
 
     return render(request, 'listar_clientes.html', {'clientes': clientes})
+
 
 def cadastrar_cliente(request):
     empresas = Empresa.objects.all()
     departamentos = Departamento.objects.all()
 
     if request.method == 'POST':
-        nome = request.POST.get('nome')
+        username = request.POST.get('username')
         cpf = request.POST.get('cpf')
         telefone = request.POST.get('telefone')
         email = request.POST.get('email')
@@ -115,9 +120,11 @@ def cadastrar_cliente(request):
                 'departamentos': departamentos,
                 'error': 'O campo CPF é obrigatório.'
             })
+        
 
+        User = get_user_model()  # Usando o CustomUser
         # Verificar se o CPF já existe no banco de dados
-        if Cliente.objects.filter(cpf=cpf).exists():
+        if  User.objects.filter(cpf=cpf).exists():
             return render(request, 'cadastrar_clientes.html', {
                 'empresas': empresas,
                 'departamentos': departamentos,
@@ -127,8 +134,8 @@ def cadastrar_cliente(request):
         empresa = get_object_or_404(Empresa, id=empresa_id)
         departamento = get_object_or_404(Departamento, id=departamento_id)
 
-        Cliente.objects.create(
-            nome=nome,
+        User.objects.create(
+            username=username,
             cpf=cpf,
             telefone=telefone,
             email=email,
@@ -143,12 +150,14 @@ def cadastrar_cliente(request):
     })
 
 def editar_cliente(request, id):
-    cliente = get_object_or_404(Cliente, id=id)
+    #    admin = get_user_model().objects.get(id=admin_id)
+    User = get_user_model()
+    cliente = get_object_or_404(User, id=id)
     empresas = Empresa.objects.all()
     departamentos = Departamento.objects.all()
 
     if request.method == 'POST':
-        nome = request.POST.get('nome')
+        username = request.POST.get('username')
         cpf = request.POST.get('cpf')
         telefone = request.POST.get('telefone')
         email = request.POST.get('email')
@@ -156,7 +165,7 @@ def editar_cliente(request, id):
         departamento_id = request.POST.get('departamento')
 
         # Validação dos campos obrigatórios
-        if not nome or not email or not empresa_id or not departamento_id:
+        if not username or not email or not empresa_id or not departamento_id:
             return render(request, 'editar_cliente.html', {
                 'cliente': cliente,
                 'empresas': empresas,
@@ -168,7 +177,7 @@ def editar_cliente(request, id):
         empresa = get_object_or_404(Empresa, id=empresa_id)
         departamento = get_object_or_404(Departamento, id=departamento_id)
 
-        cliente.nome = nome
+        cliente.nome = username
         cliente.cpf = cpf
         cliente.telefone = telefone
         cliente.email = email
@@ -185,7 +194,8 @@ def editar_cliente(request, id):
     })
 
 def excluir_cliente(request, id):
-    cliente = get_object_or_404(Cliente, id=id)
+    User = get_user_model()
+    cliente = get_object_or_404(User, id=id)
     cliente.delete()
     return redirect('listar_clientes')
 # Fim das views de clientes

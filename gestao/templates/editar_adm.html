@@ -28,6 +28,14 @@
             <input type="email" id="email" name="email" class="form-control" value="{{ admin.email }}" required>
         </div>
 
+        <div class="mb-3">
+            <label for="is_active" class="form-label">Ativo</label>
+            <select id="is_active" name="is_active" class="form-select">
+                <option value="True" {% if admin.is_active %}selected{% endif %}>Ativo</option>
+                <option value="False" {% if not admin.is_active %}selected{% endif %}>Inativo</option>
+            </select>
+        </div>
+
         <!-- Botão de reset da senha -->
         <div class="text-center mt-4">
             <button type="submit" name="reset_password" value="true" class="btn btn-danger btn-lg">Resetar Senha para '12345'</button>

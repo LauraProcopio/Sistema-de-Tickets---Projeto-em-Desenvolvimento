@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from accounts.models import CustomUser  # Certifique-se de que está importando o modelo correto de usuário
 from django.contrib.auth.decorators import login_required
@@ -8,6 +9,7 @@ from .models import Ticket, Mensagem, Empresa, Arquivo
 from django.contrib import messages
 from django.utils.dateparse import parse_date 
 from django.core.paginator import Paginator
+from django.db import connection
 
 # Listar tickets - Filtra por usuário se for cliente
 @login_required
@@ -50,8 +52,10 @@ def listar_tickets(request):
 
     return render(request, template_name, {'tickets': page_obj})
 
-
 # Excluir ticket - Somente administrador pode excluir
+
+@login_required
+
 @login_required
 def excluir_ticket(request, id):
     ticket = get_object_or_404(Ticket, id=id)
@@ -72,9 +76,9 @@ def excluir_ticket(request, id):
         return redirect('listar_tickets')
 
 
-
 # Criação de ticket - Admin ou Cliente
 @login_required
+
 def cadastrar_tickets(request):
     if request.method == 'POST':
         # Captura os dados diretamente do request.POST
@@ -137,6 +141,7 @@ def cadastrar_tickets(request):
 
 # Detalhar ticket - Apenas admin ou solicitante pode acessar
 @login_required
+
 def detalhar_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
@@ -172,9 +177,6 @@ def detalhar_ticket(request, ticket_id):
     })
 
 
-
-
-
 def editar_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
@@ -195,7 +197,6 @@ def editar_ticket(request, ticket_id):
 
     template_name = "ticket/detalhar_ticket.html" if request.user.is_staff else "ticket/detalhar_ticket_cliente.html"
     return render(request, template_name, {'ticket': ticket})
-
 
 
 def atualizar_ticket(request, ticket_id):
@@ -248,6 +249,7 @@ def atualizar_ticket(request, ticket_id):
     return render(request, template_name, {'ticket': ticket})
 
 
+
 @login_required
 def responder_ticket(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -283,7 +285,9 @@ def responder_ticket(request, ticket_id):
     })
 
 
-@login_required
+
+
+
 def excluir_resposta(request, resposta_id):
     resposta = get_object_or_404(Mensagem, id=resposta_id)
 
